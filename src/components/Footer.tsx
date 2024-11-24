@@ -16,8 +16,8 @@ export const Footer = () => {
             {globalConfig.description}
           </p>
         </div>
-        <div className={'grid grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-6 lg:grid-cols-2'}>
-          <div>
+        <div className={'grid grid-cols-1 gap-8 sm:grid-cols-1 sm:gap-6 lg:grid-cols-1'}>
+          {/* <div>
             <h2 className={'mb-6 text-sm font-semibold uppercase text-neutral-900 dark:text-white'}>Products</h2>
             <ul className={'grid gap-2'}>
               <li>
@@ -43,7 +43,7 @@ export const Footer = () => {
                 </a>
               </li>
             </ul>
-          </div>
+          </div> */}
           <div>
             <h2 className="mb-6 text-sm font-semibold uppercase text-neutral-900 dark:text-white">Legal</h2>
             <ul className="grid gap-2">

@@ -6,7 +6,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'ZCalK',
+  title: 'ZKOM',
   description: 'A distributed zk calculate framework for trustless verifiable calculation.'
 };
 

@@ -1,3 +1,4 @@
+import { globalConfig } from '@/constants';
 import Image from 'next/image';
 
 export const Header = () => {
@@ -9,7 +10,7 @@ export const Header = () => {
     >
       <div className={'px-6 flex h-[5rem] items-center'}>
         <div className="flex h-full items-center gap-2">
-          <a href="/">ZCalK</a>
+          <a href="/">{globalConfig.title}</a>
           <Image src="/logo.png" alt="Vercel Logo" className="" width={32} height={32} priority />
         </div>
       </div>
