@@ -7,7 +7,8 @@ import { ArrowRight } from '@/components/Icons';
 import { useRouter } from 'next/navigation';
 import { globalConfig } from '@/constants';
 import { Button } from '@/components/ui/button';
-
+import { SETUP_INSTRUCTIONS } from '@/constants/strings';
+import { LANDING_PAGE_TITLE, LANDING_PAGE_DESCRIPTION } from '@/constants/strings';
 
 export default function Home() {
   const router = useRouter();
@@ -21,11 +22,11 @@ export default function Home() {
         <BackgroundBeams />
         <div className="max-w-2xl mx-auto p-4 text-center ">
           <h1 className="relative z-10 text-lg md:text-4xl  bg-clip-text text-transparent bg-gradient-to-b from-neutral-200 to-neutral-600  text-center font-sans font-bold">
-          A distributed zk calculate framework for trustless verifiable calculation.
+            {LANDING_PAGE_TITLE}
           </h1>
           <p></p>
           <p className="mt-12 mb-12 text-center text-lg tracking-tight text-gray-400 md:text-xl text-balance translate-y-[-1rem] animate-fade-in [--animation-delay:400ms]">
-          ZCalK harnesses a network of distributed prover nodes to generate zero-knowledge proofs for anycalculations(such as AI computations). By leveraging the Stark and WASM-Cairo, we aim to bring unparalleled efficiency to on-chain verification.
+            {LANDING_PAGE_DESCRIPTION}
           </p>
           <div className="flex gap-4 justify-center">
             <Button
@@ -59,19 +60,7 @@ export default function Home() {
         </p>
         <pre className="bg-gray-600 text-white p-4 rounded-md overflow-x-auto">
           <code>
-            {`
-# Clone the repository
-git clone https://github.com/your-repo/node-project.git
-
-# Navigate to the project directory
-cd node-project
-
-# Install dependencies
-npm install
-
-# Start the node
-npm run start
-            `.trim()}
+            {SETUP_INSTRUCTIONS}
           </code>
         </pre>
         <p className="mt-6 text-lg text-muted-foreground">
