@@ -1,4 +1,5 @@
-// 定义接口
+import cv from '@techstark/opencv-js';
+
 interface VideoConstraints {
   width: { exact: number };
   height: { exact: number };
@@ -24,37 +25,37 @@ export class KycUtils {
     // this.errorOutput = element;
   }
 
-  loadOpenCv(onloadCallback: () => void): void {
-    let script = document.createElement('script');
-    script.setAttribute('async', '');
-    script.setAttribute('type', 'text/javascript');
-    script.addEventListener('load', async () => {
-      if (cv.getBuildInformation) {
-        console.log(cv.getBuildInformation());
-        onloadCallback();
-      } else {
-        // WASM
-        if (cv instanceof Promise) {
-          cv = await cv;
-          console.log(cv.getBuildInformation());
-          onloadCallback();
-        } else {
-          cv['onRuntimeInitialized'] = () => {
-            console.log(cv.getBuildInformation());
-            onloadCallback();
-          };
-        }
-      }
-    });
-    script.addEventListener('error', () => {
-      this.printError('Failed to load ' + this.OPENCV_URL);
-    });
-    script.src = this.OPENCV_URL;
-    let node = document.getElementsByTagName('script')[0];
-    if (node && node.parentNode) {
-      node.parentNode.insertBefore(script, node);
-    }
-  }
+  //   loadOpenCv(onloadCallback: () => void): void {
+  //     let script = document.createElement('script');
+  //     script.setAttribute('async', '');
+  //     script.setAttribute('type', 'text/javascript');
+  //     script.addEventListener('load', async () => {
+  //       if (cv.getBuildInformation) {
+  //         console.log(cv.getBuildInformation());
+  //         onloadCallback();
+  //       } else {
+  //         // WASM
+  //         if (cv instanceof Promise) {
+  //           cv = await cv;
+  //           console.log(cv.getBuildInformation());
+  //           onloadCallback();
+  //         } else {
+  //           cv['onRuntimeInitialized'] = () => {
+  //             console.log(cv.getBuildInformation());
+  //             onloadCallback();
+  //           };
+  //         }
+  //       }
+  //     });
+  //     script.addEventListener('error', () => {
+  //       this.printError('Failed to load ' + this.OPENCV_URL);
+  //     });
+  //     script.src = this.OPENCV_URL;
+  //     let node = document.getElementsByTagName('script')[0];
+  //     if (node && node.parentNode) {
+  //       node.parentNode.insertBefore(script, node);
+  //     }
+  //   }
 
   async createFileFromUrl(path: string, url: string): Promise<void> {
     try {

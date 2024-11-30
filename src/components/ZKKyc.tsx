@@ -280,10 +280,10 @@ export function ZKKyc() {
       'https://media.githubusercontent.com/media/opencv/opencv_zoo/main/models/face_recognition_sface/face_recognition_sface_2021dec.onnx';
 
     try {
-      setStatus('下载 YuNet 模型中...');
+      setStatus('Downloading YuNet model...');
       await utils.createFileFromUrl('face_detection_yunet_2023mar.onnx', detectModel);
 
-      setStatus('下载 OpenFace 模型中...');
+      setStatus('Downloading OpenFace model...');
       await utils.createFileFromUrl('face_recognition_sface_2021dec.onnx', recognModel);
 
       netDetRef.current = new (cv as any).FaceDetectorYN(
