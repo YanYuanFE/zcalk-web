@@ -1,5 +1,10 @@
 export const SETUP_INSTRUCTIONS = `
-Under construction
+git clone https://github.com/cryptonerdcn/zkom_node.git
+cd zkom_node
+curl --proto '=https' --tlsv1.2 -sSf https://docs.swmansion.com/scarb/install.sh | sh -s -- -v 2.8.2
+scarb riscv build
+cd cairo_server
+cargo run
 `.trim(); 
 
 export const LANDING_PAGE_TITLE = 

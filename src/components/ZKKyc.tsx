@@ -28,6 +28,7 @@ export function ZKKyc() {
 
   const uploadedCanvasRef = useRef<HTMLCanvasElement>(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [compareLoading, setCompareLoading] = useState(false);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -218,6 +219,32 @@ export function ZKKyc() {
     return faces;
   };
 
+  const float32ArrayToUint8Array = (float32Array: Float32Array): Uint8Array => {
+    const uint8Data = new Uint8Array(float32Array.length * 4);
+    for (let i = 0; i < float32Array.length; i++) {
+      const buffer = new ArrayBuffer(4);
+      const view = new DataView(buffer);
+      view.setFloat32(0, float32Array[i], true); // true for little-endian
+      uint8Data.set(new Uint8Array(buffer), i * 4);
+    }
+    return uint8Data;
+  };
+
+  const uint8ArrayToFloat32Array = (uint8Array: Uint8Array): Float32Array => {
+    if (uint8Array.length % 4 !== 0) {
+      throw new Error('Input array length must be a multiple of 4');
+    }
+    
+    const float32Array = new Float32Array(uint8Array.length / 4);
+    const buffer = uint8Array.buffer;
+    const view = new DataView(buffer);
+    
+    for (let i = 0; i < uint8Array.length; i += 4) {
+      float32Array[i / 4] = view.getFloat32(i, true);  // true for little-endian
+    }
+    return float32Array;
+  };
+
   const face2vec = (face: cv.Mat) => {
     const blob = cv.blobFromImage(face, 1.0, { width: 112, height: 112 }, [0, 0, 0, 0], true, false);
     netRecognRef.current!.setInput(blob);
@@ -226,7 +253,8 @@ export function ZKKyc() {
     return vec;
   };
 
-  const handleCompare = () => {
+  const handleCompare = async () => {
+    setCompareLoading(true);
     const uploadedCanvas = uploadedCanvasRef.current;
     const uploadedImage = cv.imread(uploadedCanvas!);
 
@@ -247,13 +275,39 @@ export function ZKKyc() {
       var currentFaces = detectFaces(frameBGRRef.current);
       var bestMatchScore = 0;
 
-      currentFaces.forEach(function (rect) {
+      for (var i = 0; i < currentFaces.length; i++) {
+        const rect = currentFaces[i];
         var currentFace = frameBGRRef.current.roi(rect);
         var currentVec = face2vec(currentFace);
-        var score = uploadedVec.dot(currentVec);
-        bestMatchScore = Math.max(bestMatchScore, score);
+        const uploadedU8 = float32ArrayToUint8Array(uploadedVec.data32F);
+        const currentU8 = float32ArrayToUint8Array(currentVec.data32F);
+        
+        // Create a new Uint8Array to hold both vectors
+        const combinedArray = new Uint8Array(uploadedU8.length + currentU8.length);
+        
+        // Copy uploaded vector first, then current vector
+        combinedArray.set(uploadedU8, 0);
+        combinedArray.set(currentU8, uploadedU8.length);
+        
+        console.log("Combined Uint8Array:", combinedArray);
+        
+        const fetchResult = await fetch('http://localhost:8080/run', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ data: Array.from(combinedArray) })
+        });
+        const result = await fetchResult.json();
+        console.log("result:", result);
+        const bytes = new Uint8Array(result.result);
+        const score = uint8ArrayToFloat32Array(bytes);
+        console.log("score:", score[0]);
+        bestMatchScore = score[0];
+
         currentVec.delete();
-      });
+      }
 
       // Show result
       var resultText =
@@ -270,6 +324,7 @@ export function ZKKyc() {
 
     uploadedImage.delete();
     uploadedImageBGR.delete();
+    setCompareLoading(false);
   };
 
   const loadModels = async () => {
@@ -350,7 +405,7 @@ export function ZKKyc() {
                 <CardTitle>Face Comparison</CardTitle>
               </CardHeader>
               <CardContent>
-                <Button onClick={handleCompare} disabled={!uploadedImage || !isRunning}>
+                <Button onClick={handleCompare} loading={compareLoading} disabled={!uploadedImage || !isRunning}>
                   <Upload className="mr-2 h-4 w-4" /> Start Comparison
                 </Button>
                 {compareResult && (
