@@ -218,6 +218,32 @@ export function ZKKyc() {
     return faces;
   };
 
+  const float32ArrayToUint8Array = (float32Array: Float32Array): Uint8Array => {
+    const uint8Data = new Uint8Array(float32Array.length * 4);
+    for (let i = 0; i < float32Array.length; i++) {
+      const buffer = new ArrayBuffer(4);
+      const view = new DataView(buffer);
+      view.setFloat32(0, float32Array[i], true); // true for little-endian
+      uint8Data.set(new Uint8Array(buffer), i * 4);
+    }
+    return uint8Data;
+  };
+
+  const uint8ArrayToFloat32Array = (uint8Array: Uint8Array): Float32Array => {
+    if (uint8Array.length % 4 !== 0) {
+      throw new Error('Input array length must be a multiple of 4');
+    }
+    
+    const float32Array = new Float32Array(uint8Array.length / 4);
+    const buffer = uint8Array.buffer;
+    const view = new DataView(buffer);
+    
+    for (let i = 0; i < uint8Array.length; i += 4) {
+      float32Array[i / 4] = view.getFloat32(i, true);  // true for little-endian
+    }
+    return float32Array;
+  };
+
   const face2vec = (face: cv.Mat) => {
     const blob = cv.blobFromImage(face, 1.0, { width: 112, height: 112 }, [0, 0, 0, 0], true, false);
     netRecognRef.current!.setInput(blob);
@@ -250,8 +276,35 @@ export function ZKKyc() {
       currentFaces.forEach(function (rect) {
         var currentFace = frameBGRRef.current.roi(rect);
         var currentVec = face2vec(currentFace);
-        var score = uploadedVec.dot(currentVec);
-        bestMatchScore = Math.max(bestMatchScore, score);
+        const uploadedU8 = float32ArrayToUint8Array(uploadedVec.data32F);
+        const currentU8 = float32ArrayToUint8Array(currentVec.data32F);
+        
+        // Create a new Uint8Array to hold both vectors
+        const combinedArray = new Uint8Array(uploadedU8.length + currentU8.length);
+        
+        // Copy uploaded vector first, then current vector
+        combinedArray.set(uploadedU8, 0);
+        combinedArray.set(currentU8, uploadedU8.length);
+        
+        console.log("Combined Uint8Array:", combinedArray);
+        // combinedArray是一个u8数组，一定有1024个元素。combinedArray是需要发送到本地node计算的，传送格式如下
+        // curl -X POST http://localhost:8080/run \
+        // -H "Content-Type: application/json" \
+        // -d '{"data":[1,2,3,4]}' 
+        // 这里的data就是combinedArray
+
+        // 由于计算由本地node计算，所以需要将combinedArray发送到本地node计算，然后返回计算结果，下面的js计算将不再使用。请写一个api获取计算结果并复制给score
+        // node的返回是一个数组类似于 {"result":[158,148,99,66]} ，请使用 uint8ArrayToFloat32Array 将返回的数组转换为Float32Array
+        // 例子：
+        // const bytes = new Uint8Array([158, 148, 99, 66]);  // 9E 94 63 42, 转换为Float32Array后为[56.8951]，代表下面的score就是56.8951
+        // const result = uint8ArrayToFloat32Array(bytes);
+        // console.log("result:", result[0]);  // 应该输出 56.8951
+        
+        // var score = uploadedVec.dot(currentVec);
+
+        // bestMatchScore = Math.max(bestMatchScore, score); //这一行记得在api获得了score后，将score赋值给bestMatchScore，去掉注释
+        
+
         currentVec.delete();
       });
 
