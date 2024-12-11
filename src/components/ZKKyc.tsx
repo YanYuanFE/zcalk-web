@@ -28,6 +28,7 @@ export function ZKKyc() {
 
   const uploadedCanvasRef = useRef<HTMLCanvasElement>(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [compareLoading, setCompareLoading] = useState(false);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -252,7 +253,8 @@ export function ZKKyc() {
     return vec;
   };
 
-  const handleCompare = () => {
+  const handleCompare = async () => {
+    setCompareLoading(true);
     const uploadedCanvas = uploadedCanvasRef.current;
     const uploadedImage = cv.imread(uploadedCanvas!);
 
@@ -273,7 +275,8 @@ export function ZKKyc() {
       var currentFaces = detectFaces(frameBGRRef.current);
       var bestMatchScore = 0;
 
-      currentFaces.forEach(function (rect) {
+      for (var i = 0; i < currentFaces.length; i++) {
+        const rect = currentFaces[i];
         var currentFace = frameBGRRef.current.roi(rect);
         var currentVec = face2vec(currentFace);
         const uploadedU8 = float32ArrayToUint8Array(uploadedVec.data32F);
@@ -287,26 +290,24 @@ export function ZKKyc() {
         combinedArray.set(currentU8, uploadedU8.length);
         
         console.log("Combined Uint8Array:", combinedArray);
-        // combinedArray是一个u8数组，一定有1024个元素。combinedArray是需要发送到本地node计算的，传送格式如下
-        // curl -X POST http://localhost:8080/run \
-        // -H "Content-Type: application/json" \
-        // -d '{"data":[1,2,3,4]}' 
-        // 这里的data就是combinedArray
-
-        // 由于计算由本地node计算，所以需要将combinedArray发送到本地node计算，然后返回计算结果，下面的js计算将不再使用。请写一个api获取计算结果并复制给score
-        // node的返回是一个数组类似于 {"result":[158,148,99,66]} ，请使用 uint8ArrayToFloat32Array 将返回的数组转换为Float32Array
-        // 例子：
-        // const bytes = new Uint8Array([158, 148, 99, 66]);  // 9E 94 63 42, 转换为Float32Array后为[56.8951]，代表下面的score就是56.8951
-        // const result = uint8ArrayToFloat32Array(bytes);
-        // console.log("result:", result[0]);  // 应该输出 56.8951
         
-        // var score = uploadedVec.dot(currentVec);
-
-        // bestMatchScore = Math.max(bestMatchScore, score); //这一行记得在api获得了score后，将score赋值给bestMatchScore，去掉注释
-        
+        const fetchResult = await fetch('http://localhost:8080/run', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ data: Array.from(combinedArray) })
+        });
+        const result = await fetchResult.json();
+        console.log("result:", result);
+        const bytes = new Uint8Array(result.result);
+        const score = uint8ArrayToFloat32Array(bytes);
+        console.log("score:", score[0]);
+        bestMatchScore = score[0];
 
         currentVec.delete();
-      });
+      }
 
       // Show result
       var resultText =
@@ -323,6 +324,7 @@ export function ZKKyc() {
 
     uploadedImage.delete();
     uploadedImageBGR.delete();
+    setCompareLoading(false);
   };
 
   const loadModels = async () => {
@@ -403,7 +405,7 @@ export function ZKKyc() {
                 <CardTitle>Face Comparison</CardTitle>
               </CardHeader>
               <CardContent>
-                <Button onClick={handleCompare} disabled={!uploadedImage || !isRunning}>
+                <Button onClick={handleCompare} loading={compareLoading} disabled={!uploadedImage || !isRunning}>
                   <Upload className="mr-2 h-4 w-4" /> Start Comparison
                 </Button>
                 {compareResult && (
